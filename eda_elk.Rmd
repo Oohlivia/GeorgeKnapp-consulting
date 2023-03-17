@@ -1,0 +1,162 @@
+---
+title: "STATS141XP Final Project"
+author: "Olivia Wang"
+date: "2023-02-15"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+```{r}
+reports <- read.csv("nuforc_reports.csv")
+```
+
+```{r}
+#dim(reports)
+#dim(events)
+#reports[138018,]
+#unique(as.numeric(events$Year))
+#reports = reports %>% drop_na()
+```
+
+```{r}
+#eve_sum = events$Summary
+rep_sum = reports$summary
+```
+
+```{r}
+color_list = c("red", "orange", "yellow", "green", 
+                    "blue", "indigo", "violet", "purple",
+                    "pink", "white", "black", "silver")
+
+extract_color <- function(string) {
+  words = strsplit(tolower(string), "[, &.:;!]")[[1]]
+  idx = words %in% color_list
+  if (length(words[idx]) == 0) {
+    return(NA)
+  } else {
+    return(words[idx])
+  }
+}
+```
+
+************* Ignore **************************
+### events data
+```{r}
+#color <- rep(NA, length(eve_sum))
+color_eve = c()
+for (string in eve_sum){
+  color_eve = c(color_eve, list(extract_color(string)))
+  color_eve
+}
+#color_eve #a list, the length is the same as nrow(events)
+```
+
+```{r}
+total_color_eve = c() 
+for (string in eve_sum){
+  total_color_eve = c(total_color_eve, na.omit(extract_color(string)))
+  total_color_eve
+}
+#total_color
+```
+
+
+```{r}
+library(wordcloud2)
+wordcloud2(data = table(total_color), size = 0.8, shape = "circle", color = "random-dark", backgroundColor = "white")
+```
+
+************* Ignore **************************
+
+### reports data
+```{r}
+#color <- rep(NA, length(eve_sum))
+rep_color = c()
+for (string in rep_sum){
+  rep_color = c(rep_color, list(extract_color(string)))
+  rep_color
+}
+#rep_color #a list, the length is the same as nrow(events)
+```
+
+
+```{r}
+library(wordcloud2)
+set.seed(12345)
+wordcloud2(data = table(unlist(rep_color)), size = 1, shape = "circle", color = "random-dark", backgroundColor = "white")
+```
+
+```{r}
+##collapse all the color into one string
+for(i in seq_along(rep_color)) {
+  if(sum(is.na(rep_color[[i]])) == 0) {
+    rep_color[[i]] = paste(rep_color[[i]], collapse = " ")
+  }
+  rep_color
+}
+```
+
+```{r}
+# Add color feature to the data
+color <- rep(NA, nrow(reports))
+reports = cbind(reports, color)
+
+for (i in seq_len(nrow(reports))){
+  reports$color[i] = rep_color[[i]]
+}
+```
+
+
+
+
+
+```{r}
+# extract the year out of `date_time`
+year <- c()
+for (string in reports$date_time) {
+  year <- c(year, sub("^([0-9]{4}).*", "\\1", string))
+}
+month <- c()
+for (string in reports$date_time) {
+  month <- c(month, sub("^([0-9]{4})-([0-9]{2}).*", "\\2", string))
+}
+```
+
+```{r}
+# add year feature into the original data
+reports = reports %>% 
+  mutate(year = year, month = month)
+```
+
+### Case Study: Elk Abduction
+Thursday, Feb 25, 1999, WA, a small, disc-shaped object, white and red, 3-5minutes, 
+```{r}
+# elk abduction
+# shape: could be circle, oval, disk, sphere
+# color: white, red
+
+elk_shape <- c("circle", "oval", "disk")
+elk_color <- c("white red", "red white")
+
+elk_1999 <- reports[which(reports$shape %in% elk_shape & reports$color %in% elk_color & reports$year == 1999),]
+elk_wa <- reports[which(reports$shape %in% elk_shape & reports$color %in% elk_color & reports$state == "WA"),] %>% drop_na()
+
+
+elk_1999 <- elk_1999 %>% select(summary, country, state, city, shape, color, duration, year, month)
+elk_1999$city[2] <- "Santa Clarita"
+
+elk_wa <- elk_wa %>% select(summary, country, state, city, shape, color, duration, year, month)
+#write.csv(elk_1999, file = "elk_1999")
+#write.csv(elk_wa, file = "elk_wa")
+elk_1999
+elk_wa
+```
+
+The Elk Connection incident took place on February 25th, 1999, in Washington State. According to witnesses, a small, disc-shaped object with white and red lights slowly drifted over a nearby ridge to the south and descended into the valley to the north of their location. As the witnesses watched, a herd of elk emerged from the woods and began moving towards the craft. Suddenly, one of the elk was lifted off the ground and taken aboard the craft, while the other elk scattered in all directions. The hunters reported that the craft then flew away, disappearing from sight.
+
+In that same year, 1999, five similar incidents were reported. All of them involved circular-shaped objects, specifically disks, ovals, or circles (the observed shape could be slightly different depending on the direction of observation), and all had white and red lights. One interesting finding was that two similar incidents occurred in Illinois State within a short period of time: one in Addison in October and one in Midlothian in November. This finding indicates that these two incidents are highly likely connected to each other and to the "Elk Connection" event. 
+

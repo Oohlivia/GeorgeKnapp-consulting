@@ -38,10 +38,6 @@ df$duration_minutes[grep("hours", df$duration)] <- as.numeric(gsub("\\D", "",
 #group duration into categories based on the approximate length
 df$duration_group <- cut(df$duration_minutes, breaks = c(0, 1, 10, 60, Inf), labels = c("Seconds", "Minutes", "Hours", "Longer"))
 
-#edit NA into unclear
-#df$duration_group <-ifelse(is.na(df$duration_group), "Unclear",df$duration_group)
-
-
 ggplot(df, aes(x = duration_group, fill = duration_group)) +
   geom_bar() +
   scale_fill_manual(values = c("orange", "pink", "lightgreen", "lightblue")) +
@@ -62,7 +58,6 @@ Line chart showing the number of sightings over time:
 
 ```{r message=FALSE, warning=FALSE}
 
-library(ggplot2)
 library(lubridate)
 
 #create a dataframe with the number of sightings by year
@@ -102,53 +97,180 @@ wordcloud(shape_descriptions, max.words=100, scale=c(6,0.8), rot.per=0.3, random
 From the shape descriptions of UAP sightings, the most commonly reported shapes of UAPs are “light”, “circle”, and “triangle” (This does not necessarily mean that these are the most common shapes of UAPs overall, but rather that they are the most frequently reported shapes in the dataset that we are working with.). However, the “unknown” shape was also frequently reported, which suggesting that there are many UAP that are not easily categorized by traditional shape descriptions. The accuracy and reliability of these shape descriptions are depending on reporters’ perception and ability to describe what they saw. Like when people reports a shape of light, they might just describe the object as emitting light if they cannot identify the accurate shape.(Additionally, it's possible that some UAP sightings reported as certain shapes may be misidentified natural or man-made objects, or even hoaxes.)
 
 
+
+Analysis on unusual shape "cone":
+
 ```{r}
 
+#filter shape == 'cone'
+cone_sightings <- subset(reports,
+                         shape == "cone",
+                         select = c("country",
+                                    "city",
+                                    "state",
+                                    "date_time",
+                                    "city_latitude",
+                                    "city_longitude"))
 
+
+# add 'year' column 
+cone_sightings <- cone_sightings %>%
+  mutate(year = year(as.POSIXct(date_time, format = "%Y-%m-%dT%H:%M:%S"))) %>%
+  group_by(year)
+
+# rewrite date_time
+cone_sightings$date_time <- as.POSIXct(cone_sightings$date_time, format = "%Y-%m-%dT%H:%M:%S")
+
+head(cone_sightings)
+
+```
+
+We have total 578 results where the UAP sightings' shape is "cone". We only keep columns that we can handle for later analysis.
+
+Firstly, we look at the country.
+
+```{r}
+
+#count the frequency of country given that shape == "cone"
+num <- rep(0,length(unique(cone_sightings$country)))
+i = 1
+for(country in unique(cone_sightings$country)){
+  num[i] = sum(cone_sightings$country == country)
+  i = i + 1
+}
+
+country_cone <- data.frame("country" = unique(cone_sightings$country), "count" = num)
+
+#rank it by count
+country_cone <- country_cone %>% arrange(desc(count))
+
+head(country_cone,10)
+
+
+```
+
+
+Based on the dataframe, it appears that the country with the most reported UAP sightings with cone shape is the USA, followed by Canada, then the UK.
+
+Let's get into US:
+
+```{r message=FALSE, warning=FALSE}
+library(leaflet)
+
+# filter the country
+cone_us = cone_sightings[cone_sightings$country == "USA",]
+
+# leaflet map with markers for each sighting
+map <- leaflet(cone_us) %>% 
+  addTiles() %>%
+  addMarkers(~city_longitude,
+             ~city_latitude,
+             popup = ~paste("State: ", state,
+                            "<br>City: ", city,
+                            "<br>Date: ", date_time,
+                            "<br>Year: ", year))
+map
+
+
+```
+
+Save leaflet map as HTML file: (we can insert to overleaf)
+
+First to `install.packages("htmlwidgets")`.
+
+Then import the library `library(htmlwidgets)`.
+
+Save file by `saveWidget(map, file = "cone_sightings_usa_map.html")`
+
+Note: we only need to save file once. 
+
+
+
+```{r}
+
+#count frequency of state
+num = rep(0,length(unique(cone_us$state)))
+i = 1
+for(state in unique(cone_us$state)){
+  num[i] = sum(cone_us$state == state)
+  i = i + 1
+}
+ 
+cone_state = data.frame("state" = unique(cone_us$state), "count" = num)
+
+#rank state by count
+cone_state <- cone_state %>% arrange(desc(count))
+
+head(cone_state)
 
 ```
 
 
 ```{r}
 
+ggplot(head(cone_state,10), aes(x = reorder(state, -count), y = count, fill = state)) +
+  geom_bar(stat = "identity") +
+  labs(title = "TOP 10 UAP Sightings with Cone Shape by State in USA", x = "State", y = "Count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  theme(legend.position="none")
 
+
+```
+
+
+Based on the histogram of the top 10 UAP sightings with cone shape by state in USA, we can conclude that California (CA) has the highest number of sightings with 62 counts, followed by Arizona (AZ) with 27 counts and Pennsylvania (PA) with 26 counts. 
+
+
+Next, let's get into CA.
+
+```{r}
+
+#filter the state
+cone_ca = cone_us[cone_us$state == "CA",]
+
+dim(cone_ca)
 
 ```
 
 
 ```{r}
 
+ggplot(cone_ca, aes(x = year)) +
+  geom_histogram(binwidth = 1, fill = "steelblue") +
+  geom_text(stat = "count", aes(label = after_stat(count),
+                                y = after_stat(count) + 1),
+            size = 3, vjust= 3) +
+  labs(title = "UAP Sightings with Cone Shape in California, USA by Year", x = "Year", y = "Count") +
+  theme_minimal()
 
 
 ```
+
+
+The plot visualizes the UAP sightings with cone shape in California, USA by year. The histogram shows the distribution of the counts over the years, with each bin representing one year. The highest count number of 11 is observed in the year 2015, which indicates that it had the most UAP sightings with cone shape reported during the given time period. The count number keeps increasing from 1999 to 2002 and then drops to zero within three years. 
 
 
 ```{r}
 
 
+#count frequency of city
+num = rep(0,length(unique(cone_ca$city)))
+i = 1
+for(city in unique(cone_ca$city)){
+  num[i] = sum(cone_ca$city == city)
+  i = i + 1
+}
+ 
+cone_ca = data.frame("state" = unique(cone_ca$city), "count" = num)
+
+#rank state by count
+cone_ca <- cone_ca %>% arrange(desc(count))
+
+head(cone_ca)
 
 ```
 
-
-```{r}
-
-
-
-```
-
-
-```{r}
-
-
-
-```
-
-
-```{r}
-
-
-
-```
 
 
 ```{r}

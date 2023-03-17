@@ -1,0 +1,159 @@
+---
+title: "stats 141xp - project"
+author: "Haomin Mai"
+date: "2023-02-28"
+output: pdf_document
+---
+
+
+```{r}
+
+reports <- read.csv("nuforc_reports.csv")
+
+```
+
+
+Histogram of sighting durations:
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+df <- reports
+
+#convert duration values to minute
+df$duration_minutes <- NA
+df$duration_minutes[grep("seconds", df$duration)] <- as.numeric(gsub("\\D", "",
+                                                                     df$duration[grep("seconds",
+                                                                                      df$duration)]))/60
+
+df$duration_minutes[grep("minutes", df$duration)] <- as.numeric(gsub("\\D", "",
+                                                                     df$duration[grep("minutes",
+                                                                                      df$duration)]))
+
+df$duration_minutes[grep("hours", df$duration)] <- as.numeric(gsub("\\D", "",
+                                                                   df$duration[grep("hours",
+                                                                                    df$duration)]))*60
+
+#group duration into categories based on the approximate length
+df$duration_group <- cut(df$duration_minutes, breaks = c(0, 1, 10, 60, Inf), labels = c("Seconds", "Minutes", "Hours", "Longer"))
+
+#edit NA into unclear
+#df$duration_group <-ifelse(is.na(df$duration_group), "Unclear",df$duration_group)
+
+
+ggplot(df, aes(x = duration_group, fill = duration_group)) +
+  geom_bar() +
+  scale_fill_manual(values = c("orange", "pink", "lightgreen", "lightblue")) +
+  xlab("Duration") +
+  ylab("Number of sightings") +
+  ggtitle("Histogram of UAP sighting durations")
+
+```
+
+
+For duration column in our dataset, it includes something like: ["5 hours", "15 seconds", "2 minutes", "Seconds", "ongoing at 15:33", "~8 seconds", "Few minutes", "5 long seconds and a moth", "1hr or so", etc.]. This makes the process of extract information to be very difficult and our plot result shows that "NA" has the most number of sightings. This makes the histogram less meaningful but still provide some insight into the distribution of sighting durations even if there are many unknown values.
+
+Base on the histogram of UAP sighting durations, we see that the most of the reported sightings have the durations that are less than an hour with majority falling in the minutes category. This suggests that the sightings tend to be brief in nature. However, there are also a significant number of sightings with durations that are longer than hours, which indicated that some UAP sightings may be potentially more significant. Overall, the histogram provides insights into the nature of UAP sightings and can help researchers better understand the characteristics of these phenomena.
+
+
+
+Line chart showing the number of sightings over time:
+
+```{r message=FALSE, warning=FALSE}
+
+library(ggplot2)
+library(lubridate)
+
+#create a dataframe with the number of sightings by year
+sightings_by_year <- reports %>%
+  mutate(year = year(as.POSIXct(date_time, format = "%Y-%m-%dT%H:%M:%S"))) %>%
+  group_by(year) %>%
+  summarize(num_sightings = n())
+
+ggplot(sightings_by_year, aes(x = year, y = num_sightings)) +
+  geom_line() +
+  xlab("Year") +
+  ylab("Number of sightings") +
+  ggtitle("Number of UAP sightings over time")
+
+
+```
+
+
+In this chart, we can see that the number of UAP sightings has increased over time with the a particularly steep increase in the number of sightings starting in the middle of 1990s. This trend continued unital early 2015 and then decreased in the last few years. This trend can be influenced by increased public awareness of UAP sightings and advances in technology that makes it easier to capture and share information about thess phenomena.
+
+
+Word cloud of shape descriptions:
+
+```{r message=FALSE, warning=FALSE}
+
+library(wordcloud)
+
+shape_descriptions <- reports$shape
+
+wordcloud(shape_descriptions, max.words=100, scale=c(6,0.8), rot.per=0.3, random.order=FALSE, colors=brewer.pal(8, "Dark2"))
+
+
+
+```
+
+
+From the shape descriptions of UAP sightings, the most commonly reported shapes of UAPs are “light”, “circle”, and “triangle” (This does not necessarily mean that these are the most common shapes of UAPs overall, but rather that they are the most frequently reported shapes in the dataset that we are working with.). However, the “unknown” shape was also frequently reported, which suggesting that there are many UAP that are not easily categorized by traditional shape descriptions. The accuracy and reliability of these shape descriptions are depending on reporters’ perception and ability to describe what they saw. Like when people reports a shape of light, they might just describe the object as emitting light if they cannot identify the accurate shape.(Additionally, it's possible that some UAP sightings reported as certain shapes may be misidentified natural or man-made objects, or even hoaxes.)
+
+
+```{r}
+
+
+
+```
+
+
+```{r}
+
+
+
+```
+
+
+```{r}
+
+
+
+```
+
+
+```{r}
+
+
+
+```
+
+
+```{r}
+
+
+
+```
+
+
+```{r}
+
+
+
+```
+
+
+```{r}
+
+
+
+```
+
+
+```{r}
+
+
+
+```
+

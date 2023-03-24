@@ -174,7 +174,7 @@ map
 
 ```
 
-Save leaflet map as HTML file: (we can insert to overleaf)
+Save leaflet map as HTML file: 
 
 First to `install.packages("htmlwidgets")`.
 
@@ -184,7 +184,7 @@ Save file by `saveWidget(map, file = "cone_sightings_usa_map.html")`
 
 Note: we only need to save file once. 
 
-
+(Sad news: "iframe" is no longer available for download through CTAN, which means we cannot insert html into overleaf.)
 
 ```{r}
 
